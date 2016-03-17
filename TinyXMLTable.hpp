@@ -1,10 +1,7 @@
 //
 // definitions for the parsing table structure
 //
-#include "WProgram.h"
-#include "WConstants.h"
 #include <inttypes.h>
-#include <avr/pgmspace.h>
 
 //
 // Char types
@@ -64,7 +61,7 @@ struct parseTable {
   uint8_t    nextState;
 };
 
-const parseTable stateTable[] PROGMEM = {
+const parseTable stateTable[] = {
 /* 00 Init                */  {'<',           incLTcount,        starttagname,    TagStart},
 /* 01 2                   */  {whiteSpace,    donothing,         donothing,       Init},
 /* 02 3                   */  {anychar,       cleardata,         storeifneeded,   Init1},
