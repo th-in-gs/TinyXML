@@ -5,6 +5,7 @@
 //   - Adafruit HUZZAH ESP8266 Breakout (#2471) (requires FTDI cable)
 //   - Adafruit 0.56" 4-Digit 7-Segment Display (878, 879, 880, 881 or 1002)
 //     1 to 8 displays can be used, one per transit stop & line.
+//
 // Requires TinyXML library: https://github.com/adafruit/TinyXML
 //
 // This shows the next tracked & predicted arrival time for each transit
@@ -51,7 +52,7 @@ struct {
 WiFiClient client;
 TinyXML    xml;
 uint8_t    buffer[150]; // For XML decoding
-uint8_t    s; // Stop # currently being searched (global for XML_callback)
+uint8_t    s=NUM_STOPS; // Stop # currently being searched
 uint32_t   lastConnectTime = -(POLL_INTERVAL * 60000L); // - on purpose!
 uint32_t   seconds[2];
 
@@ -133,7 +134,8 @@ void refresh(void) {
 
     // If this stop is currently being searched, animate dashes
     if(i == s) {
-      stops[i].display.writeDigitRaw(idx[(t >> 8) & 3], 0b01000000);
+      stops[i].display.writeDigitRaw(idx[(t >> 8) & 3],
+        stops[i].seconds[0] ? 0b01000000 : 0);
     }
 
     stops[i].display.writeDisplay();
@@ -159,9 +161,13 @@ void setup(void) {
 
 // MAIN LOOP ---------------------------------------------------------------
 
+#define READ_TIMEOUT (10 * 1000) // 10 sec
+
 void loop(void) {
   uint32_t t;
   int      c;
+  uint8_t  b = 0;
+  boolean  timedOut;
 
   while(((t = millis()) - lastConnectTime) < (POLL_INTERVAL * 60000L)) {
     refresh();
@@ -190,13 +196,23 @@ void loop(void) {
       client.print(host);
       client.print("\r\nConnection: Close\r\n\r\n");
       memset(seconds, 0, sizeof(seconds)); // Clear predictions
+      t        = millis(); // Start time
+      timedOut = false;
       while(client.connected()) {
-        if(!(t++ & 0x20)) refresh(); // Every 32 bytes, handle displays
-        if((c = client.read()) >= 0) xml.processChar(c);
+        if(!(b++ & 0x20)) refresh(); // Every 32 bytes, handle displays
+        if((c = client.read()) >= 0) {
+          xml.processChar(c);
+          t = millis(); // Reset timeout clock
+        } else if((millis() - t) >= READ_TIMEOUT) {
+          timedOut = true;
+          break;
+        }
       }
-      // Copy newly-polled predictions to stops structure:
-      memcpy(stops[s].seconds, seconds, sizeof(seconds));
-      stops[s].lastQueryTime = millis();
+      if(!timedOut) { // Successful transfer?
+        // Copy newly-polled predictions to stops structure:
+        memcpy(stops[s].seconds, seconds, sizeof(seconds));
+        stops[s].lastQueryTime = millis();
+      }
     }
     client.stop();
   }
