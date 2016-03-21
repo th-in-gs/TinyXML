@@ -125,20 +125,22 @@ void refresh(void) {
       // both will fit with a blank digit between them.
       if(p[1] && (p[0] >= 10)) p[1] = 0;
 
-      stops[i].display.print(p[0]); // Always show prediction 0
-      if(p[1]) { // Show second prediction if present
-        if(p[1] >= 10) stops[i].display.writeDigitNum(0, p[1] / 10, false);
-        stops[i].display.writeDigitNum(1, p[1] % 10, false);
+      if(p[1]) {
+        stops[i].display.print(p[1]); // 2nd prediction on right
+        stops[i].display.writeDigitNum(1, p[0], false); // 1st on left
+      } else {
+        stops[i].display.print(p[0]);
       }
     }
 
-    // If this stop is currently being searched, animate dashes
-    if(i == s) {
-      stops[i].display.writeDigitRaw(idx[(t >> 8) & 3],
-        stops[i].seconds[0] ? 0b01000000 : 0);
-    }
-
     stops[i].display.writeDisplay();
+
+    // If this stop is currently being searched, pulse brightness
+    if(i == s) {
+      j = t >> 6; // ~1/16 sec
+      if(j & 0x10) stops[i].display.setBrightness(      j & 0xF);
+      else         stops[i].display.setBrightness(15 - (j & 0xF));
+    } else         stops[i].display.setBrightness(15);
   }
 }
 
