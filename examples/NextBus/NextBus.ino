@@ -127,7 +127,7 @@ void refresh(void) {
 
       if(p[1]) {
         stops[i].display.print(p[1]); // 2nd prediction on right
-        stops[i].display.writeDigitNum(1, p[0], false); // 1st on left
+        stops[i].display.writeDigitNum(0, p[0], false); // 1st on left
       } else {
         stops[i].display.print(p[0]);
       }
