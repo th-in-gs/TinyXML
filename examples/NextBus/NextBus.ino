@@ -29,6 +29,7 @@ char ssid[] = "NETWORK_NAME",     // WiFi network name
 
 #define POLL_INTERVAL 2 // Time between searches (minutes)
 #define MIN_TIME      5 // Skip arrivals sooner than this (minutes)
+#define RESET_PIN    16 // Connect RST to this pin and to V+ w/10K resistor
 
 struct {
   const uint8_t     addr;          // I2C address of display
@@ -180,13 +181,16 @@ void loop(void) {
 
   Serial.print("WiFi connecting..");
   WiFi.begin(ssid, pass);
+  // Wait up to 1 minute for connection...
   for(c=0; (c < 60) && (WiFi.status() != WL_CONNECTED); c++) {
     Serial.write('.');
     for(t = millis(); (millis() - t) < 500; refresh());
   }
-  if(c >= 60) {
-    Serial.println("Failed. Will retry later.");
-    return;
+  if(c >= 60) { // If it didn't connect within 1 min
+    Serial.println("Failed. Will reset & retry...");
+    delay(1000);                  // Wait for serial output
+    pinMode(RESET_PIN, OUTPUT);   // Hard reset
+    digitalWrite(RESET_PIN, LOW); // Rar!
   }
   Serial.println("OK!");
 
