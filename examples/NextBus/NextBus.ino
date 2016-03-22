@@ -129,7 +129,9 @@ void refresh(void) {
         stops[i].display.print(p[1]); // 2nd prediction on right
         stops[i].display.writeDigitNum(0, p[0], false); // 1st on left
       } else {
-        stops[i].display.print(p[0]);
+        // Single prediction sorta left-ish justified on digits 0 & 1
+        if(p[0] > 10) stops[i].display.writeDigitNum(0, p[0] / 10, false);
+        stops[i].display.writeDigitNum(1, p[0] % 10, false);
       }
     }
 
