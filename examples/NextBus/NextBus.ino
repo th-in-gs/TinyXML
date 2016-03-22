@@ -180,9 +180,13 @@ void loop(void) {
 
   Serial.print("WiFi connecting..");
   WiFi.begin(ssid, pass);
-  while(WiFi.status() != WL_CONNECTED) {
+  for(c=0; (c < 60) && (WiFi.status() != WL_CONNECTED); c++) {
     Serial.write('.');
     for(t = millis(); (millis() - t) < 500; refresh());
+  }
+  if(c >= 60) {
+    Serial.println("Failed. Will retry later.");
+    return;
   }
   Serial.println("OK!");
 
