@@ -207,6 +207,7 @@ void loop(void) {
       client.print(" HTTP/1.1\r\nHost: ");
       client.print(host);
       client.print("\r\nConnection: Close\r\n\r\n");
+      xml.reset();
       memset(seconds, 0, sizeof(seconds)); // Clear predictions
       t        = millis(); // Start time
       timedOut = false;
