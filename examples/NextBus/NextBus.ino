@@ -30,6 +30,7 @@ char ssid[] = "NETWORK_NAME",     // WiFi network name
 #define POLL_INTERVAL 2 // Time between searches (minutes)
 #define MIN_TIME      5 // Skip arrivals sooner than this (minutes)
 #define RESET_PIN    16 // Connect RST to this pin and to V+ w/10K resistor
+#define READ_TIMEOUT 15 // Cancel query if no data received (seconds)
 
 struct {
   const uint8_t     addr;          // I2C address of display
@@ -166,8 +167,6 @@ void setup(void) {
 
 // MAIN LOOP ---------------------------------------------------------------
 
-#define READ_TIMEOUT (10 * 1000) // 10 sec
-
 void loop(void) {
   uint32_t t;
   int      c;
@@ -195,6 +194,8 @@ void loop(void) {
   Serial.println("OK!");
 
   for(s=0; s<NUM_STOPS; s++) {
+    Serial.print("Stop #");
+    Serial.println(stops[s].stopID);
     Serial.print("Contacting server...");
     if(client.connect(host, 80)) {
       Serial.println("OK\r\nRequesting data...");
@@ -207,27 +208,30 @@ void loop(void) {
       client.print(" HTTP/1.1\r\nHost: ");
       client.print(host);
       client.print("\r\nConnection: Close\r\n\r\n");
+      client.flush();
       xml.reset();
       memset(seconds, 0, sizeof(seconds)); // Clear predictions
       t        = millis(); // Start time
       timedOut = false;
       while(client.connected()) {
-        if(!(b++ & 0x20)) refresh(); // Every 32 bytes, handle displays
+        if(!(b++ & 0x40)) refresh(); // Every 64 bytes, handle displays
         if((c = client.read()) >= 0) {
           xml.processChar(c);
           t = millis(); // Reset timeout clock
-        } else if((millis() - t) >= READ_TIMEOUT) {
+        } else if((millis() - t) >= (READ_TIMEOUT * 1000)) {
+          Serial.println("---Timeout---");
           timedOut = true;
           break;
         }
       }
-      if(!timedOut) { // Successful transfer?
+      if(!timedOut && seconds[0]) { // Successful transfer?
         // Copy newly-polled predictions to stops structure:
         memcpy(stops[s].seconds, seconds, sizeof(seconds));
         stops[s].lastQueryTime = millis();
       }
     }
     client.stop();
+    Serial.println();
   }
 
   Serial.println("Stopping WiFi.");
