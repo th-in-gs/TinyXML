@@ -125,14 +125,14 @@ void refresh(void) {
       // is 10 minutes or more, don't show the second prediction (it
       // won't fit on display). Two predictions are shown ONLY if
       // both will fit with a blank digit between them.
-      if(p[1] && (p[0] >= 10)) p[1] = 0;
+      if(p[0] >= 10) p[1] = 0;
 
       if(p[1]) {
         stops[i].display.print(p[1]); // 2nd prediction on right
         stops[i].display.writeDigitNum(0, p[0], false); // 1st on left
       } else {
         // Single prediction sorta left-ish justified on digits 0 & 1
-        if(p[0] > 10) stops[i].display.writeDigitNum(0, p[0] / 10, false);
+        if(p[0] >= 10) stops[i].display.writeDigitNum(0, p[0] / 10, false);
         stops[i].display.writeDigitNum(1, p[0] % 10, false);
       }
     }
