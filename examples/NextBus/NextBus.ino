@@ -194,7 +194,7 @@ void loop(void) {
       return; // If hard reset isn't wired up, just retry
     }
     Serial.println("OK!");
-    delay(5000); // Pause before hitting it with queries & stuff
+    delay(10000); // Pause before hitting it with queries & stuff
   }
 
   for(s=0; s<NUM_STOPS; s++) {
