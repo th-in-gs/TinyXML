@@ -144,7 +144,7 @@ void refresh(void) {
       j = t >> 6; // ~1/16 sec
       if(j & 0x10) stops[i].display.setBrightness(      j & 0xF);
       else         stops[i].display.setBrightness(15 - (j & 0xF));
-    } else         stops[i].display.setBrightness(15);
+    } else         stops[i].display.setBrightness(k ? 15 : 1);
   }
 }
 
@@ -178,20 +178,23 @@ void loop(void) {
   }
   lastConnectTime = t;
 
-  Serial.print("WiFi connecting..");
-  WiFi.begin(ssid, pass);
-  // Wait up to 1 minute for connection...
-  for(c=0; (c < 60) && (WiFi.status() != WL_CONNECTED); c++) {
-    Serial.write('.');
-    for(t = millis(); (millis() - t) < 500; refresh());
+  if(WiFi.status() != WL_CONNECTED) {
+    Serial.print("WiFi connecting..");
+    WiFi.begin(ssid, pass);
+    // Wait up to 1 minute for connection...
+    for(c=0; (c < 60) && (WiFi.status() != WL_CONNECTED); c++) {
+      Serial.write('.');
+      for(t = millis(); (millis() - t) < 1000; refresh());
+    }
+    if(c >= 60) { // If it didn't connect within 1 min
+      Serial.println("Failed. Will reset & retry...");
+      delay(1000);                  // Wait for serial output
+      pinMode(RESET_PIN, OUTPUT);   // Hard reset
+      digitalWrite(RESET_PIN, LOW); // Rar!
+    }
+    Serial.println("OK!");
+    delay(5000); // Pause before hitting it with queries & stuff
   }
-  if(c >= 60) { // If it didn't connect within 1 min
-    Serial.println("Failed. Will reset & retry...");
-    delay(1000);                  // Wait for serial output
-    pinMode(RESET_PIN, OUTPUT);   // Hard reset
-    digitalWrite(RESET_PIN, LOW); // Rar!
-  }
-  Serial.println("OK!");
 
   for(s=0; s<NUM_STOPS; s++) {
     Serial.print("Stop #");
@@ -233,8 +236,5 @@ void loop(void) {
     client.stop();
     Serial.println();
   }
-
-  Serial.println("Stopping WiFi.");
-  WiFi.disconnect();
 }
 
