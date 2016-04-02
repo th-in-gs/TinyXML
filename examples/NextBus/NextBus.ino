@@ -29,12 +29,11 @@ char ssid[] = "NETWORK_NAME",     // WiFi network name
 
 #define POLL_INTERVAL 2 // Time between searches (minutes)
 #define MIN_TIME      5 // Skip arrivals sooner than this (minutes)
-#define RESET_PIN    16 // Connect RST to this pin and to V+ w/10K resistor
 #define READ_TIMEOUT 15 // Cancel query if no data received (seconds)
 
 struct {
   const uint8_t     addr;          // I2C address of display
-  const char       *agency;
+  const char       *agency;        // Get these using routefinder.py script
   const char       *route;
   const char       *stopID;
   uint32_t          lastQueryTime; // Time of last query (millis())
@@ -55,7 +54,7 @@ WiFiClient client;
 TinyXML    xml;
 uint8_t    buffer[150]; // For XML decoding
 uint8_t    s=NUM_STOPS; // Stop # currently being searched
-uint32_t   lastConnectTime = -(POLL_INTERVAL * 60000L); // - on purpose!
+uint32_t   lastConnectTime = -(POLL_INTERVAL * 60000L); // neg on purpose!
 uint32_t   seconds[2];
 
 // UTILITY FUNCTIONS -------------------------------------------------------
@@ -104,12 +103,14 @@ void refresh(void) {
     // Time difference (seconds) since last query
     dt = ((t = millis()) - stops[i].lastQueryTime + 500) / 1000;
     // Convert predictions (stops[i].seconds, up to 2, sorted) to minutes
-    memset(p, 0, sizeof(p));    // Assume nothing
-    for(j=k=0; j<2; j++) {      // For each possible prediction...
-      if(stops[i].seconds[j] && (stops[i].seconds[j] < 43200)) {
-        if((m = (stops[i].seconds[j] - dt) / 60) >= MIN_TIME) {
-          if(m > 99) m = 99; // Clip
-          p[k++] = m;        // Store
+    memset(p, 0, sizeof(p));       // Assume nothing
+    for(j=k=0; j<2; j++) {         // For each possible prediction...
+      if(stops[i].seconds[j]) {    // Prediction available?
+        int32_t s = (stops[i].seconds[j] - dt); // Possibly negative
+        if(s >= (MIN_TIME * 60)) { // Above min time threshold?
+          m = s / 60;              // Seconds -> minutes
+          if(m > 99) m = 99;       // Clip to 2 digits
+          p[k++] = m;              // Store
         }
       }
     }
@@ -187,11 +188,8 @@ void loop(void) {
       for(t = millis(); (millis() - t) < 1000; refresh());
     }
     if(c >= 60) { // If it didn't connect within 1 min
-      Serial.println("Failed. Will reset & retry...");
-      delay(1000);                  // Wait for serial output
-      pinMode(RESET_PIN, OUTPUT);   // Hard reset
-      digitalWrite(RESET_PIN, LOW); // Rar!
-      return; // If hard reset isn't wired up, just retry
+      Serial.println("Failed. Will retry...");
+      return;
     }
     Serial.println("OK!");
     delay(10000); // Pause before hitting it with queries & stuff
