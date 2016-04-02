@@ -106,7 +106,7 @@ void refresh(void) {
     // Convert predictions (stops[i].seconds, up to 2, sorted) to minutes
     memset(p, 0, sizeof(p));    // Assume nothing
     for(j=k=0; j<2; j++) {      // For each possible prediction...
-      if(stops[i].seconds[j]) { // Prediction available?
+      if(stops[i].seconds[j] && (stops[i].seconds[j] < 43200)) {
         if((m = (stops[i].seconds[j] - dt) / 60) >= MIN_TIME) {
           if(m > 99) m = 99; // Clip
           p[k++] = m;        // Store
