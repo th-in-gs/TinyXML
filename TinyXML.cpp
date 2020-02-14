@@ -193,7 +193,7 @@ void TinyXML::action(uint8_t ch, uint8_t actionType)
     checkTagBufferPtr = 0;
     break;
   case addtochktagname:
-    if (tagBufferPtr < CHECKTAGMAX-2) checkTagBuffer[checkTagBufferPtr++] = ch;
+    if (checkTagBufferPtr < CHECKTAGMAX-2) checkTagBuffer[checkTagBufferPtr++] = ch;
     else action(ch, error);
     break;
   case checkremovelasttag:
