@@ -54,7 +54,7 @@ void TinyXML::processChar(uint8_t ch)
     switch ( chToParse )
     {
     case whiteSpace:
-      if (ch == ' ' || ch == '\t' || ch == '\n' | ch == '\r') bMatch=true;
+      if (ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r') bMatch=true;
       break;
     case alpha:
       if (isAlpha(ch))  bMatch=true;
@@ -193,7 +193,7 @@ void TinyXML::action(uint8_t ch, uint8_t actionType)
     checkTagBufferPtr = 0;
     break;
   case addtochktagname:
-    if (tagBufferPtr < CHECKTAGMAX-2) checkTagBuffer[checkTagBufferPtr++] = ch;
+    if (checkTagBufferPtr < CHECKTAGMAX-2) checkTagBuffer[checkTagBufferPtr++] = ch;
     else action(ch, error);
     break;
   case checkremovelasttag:
